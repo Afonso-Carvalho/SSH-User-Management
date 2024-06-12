@@ -20,7 +20,7 @@ Este script Python utiliza a biblioteca Paramiko para estabelecer conexões SSH 
 pip install paramiko
 ```
 2. Preencha o arquivo 'credenciais.csv' com as informações dos servidores (hostname, username, password).
-3. Execute o script Python
+3. Execute o script Python.
 
 ## :bulb: Funcionalidades
 
