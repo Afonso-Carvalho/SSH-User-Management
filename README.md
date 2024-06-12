@@ -2,6 +2,7 @@
 
 ![Badge Concluído](https://img.shields.io/static/v1?label=Status&message=Concluído&color=success&style=for-the-badge)
 ![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)
+![Paramiko](https://img.shields.io/badge/Paramiko-2C2D72?style=for-the-badge&logo=python&logoColor=white)
 
 ## :book: Resumo do projeto
 Este script Python utiliza a biblioteca Paramiko para estabelecer conexões SSH seguras com uma lista de servidores e gerenciar os usuários.
