@@ -7,22 +7,25 @@ def gerar_senha_aleatoria(tamanho=12):
     caracteres = string.ascii_letters + string.digits
     return ''.join(secrets.choice(caracteres) for _ in range(tamanho))
 
-contas = ["xxx", "xxx", "xxxx", "xxxxx", "xxxx", "xxxxxxxx"]
+# Lista de credenciais no próprio script
+credenciais = [
+    {"hostname": "xxxx", "username": "xxx", "password": "xxxx"},
+    {"hostname": "xxx", "username": "xxxx", "password": "xxxxx"},
+]
 
-
+contas = ["xxx", "xx", "xx", "xx", "xx", "xxxx"]
 linhas_atualizadas = []
 
+# Garantir que o arquivo usuarios_criados.csv tenha cabeçalho
+with open('usuarios_criados.csv', mode='w', newline='') as arquivo_usuarios:
+    escritor_usuarios_csv = csv.DictWriter(arquivo_usuarios, fieldnames=['ip', 'usuario', 'senha'])
+    escritor_usuarios_csv.writeheader()
 
-with open('credenciais.csv', mode='r') as arquivo:
-    leitor_csv = csv.DictReader(arquivo)
-    linhas = list(leitor_csv)
-
-
-for linha in linhas:
-    hostname = linha['hostname']
-    username = linha['username']
-    password = linha['password']
-    linha_atualizada = linha.copy() 
+for credencial in credenciais:
+    hostname = credencial['hostname']
+    username = credencial['username']
+    password = credencial['password']
+    linha_atualizada = credencial.copy()
 
     client_ssh = paramiko.SSHClient()
     client_ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -31,57 +34,45 @@ for linha in linhas:
         client_ssh.connect(hostname=hostname, port=22, username=username, password=password)
         linha_atualizada['status'] = 'OK'
 
-
-        stdin, stdout, stderr = client_ssh.exec_command("grep 'xxxx' /etc/group")
-        if stdout.channel.recv_exit_status() == 1:
-            stdin, stdout, stderr = client_ssh.exec_command("groupadd xxxx && echo -e '#xxxxx\n%xxx ALL=(ALL) NOPASSWD:ALL' | tee -a /etc/sudoers")
-            if stdout.channel.recv_exit_status() != 0:
-                linha_atualizada['status'] = 'Erro ao criar grupo xxx'
-
-
-        stdin, stdout, stderr = client_ssh.exec_command("grep 'xxxxx' /etc/group")
-        if stdout.channel.recv_exit_status() == 1:
-            stdin, stdout, stderr = client_ssh.exec_command("groupadd xxxx")
-            if stdout.channel.recv_exit_status() != 0:
-                linha_atualizada['status'] = 'Erro ao criar grupo xxxxx'
-
+        # Atualizando o arquivo sudoers
+        comando_sudoers = 'echo -e "#Usuario xxxxx" | sudo tee -a /etc/sudoers.d/xxxxxx'
+        stdin, stdout, stderr = client_ssh.exec_command(comando_sudoers)
+        if stdout.channel.recv_exit_status() != 0:
+            raise Exception(f"Falha ao atualizar sudoers: {stderr.read().decode().strip()}")
 
         with open('usuarios_criados.csv', mode='a', newline='') as arquivo_usuarios:
             escritor_usuarios_csv = csv.DictWriter(arquivo_usuarios, fieldnames=['ip', 'usuario', 'senha'])
 
-
             for conta in contas:
                 stdin, stdout, stderr = client_ssh.exec_command(f"grep {conta} /etc/passwd")
-                if stdout.channel.recv_exit_status() == 1:
+                if stdout.channel.recv_exit_status() == 1:  # Usuário não existe
                     senha = gerar_senha_aleatoria()
-                    if conta == "xxxx":
-                        stdin, stdout, stderr = client_ssh.exec_command(f"useradd -m {conta} -p $(echo '{senha}' | openssl passwd -1 -stdin) -G xxxx -s /bin/bash")
-                    else:
-                        stdin, stdout, stderr = client_ssh.exec_command(f"useradd -m {conta} -p $(echo '{senha}' | openssl passwd -1 -stdin) -G xxxx -s /bin/bash")
-                    
-                    if stdout.channel.recv_exit_status() == 0:
-                        linha_atualizada['status'] = 'OK'
-                        linhas_atualizadas.append(linha_atualizada)
-                        escritor_usuarios_csv.writerow({'ip': hostname, 'usuario': conta, 'senha': senha})
+                    if conta != "yyyyy":
+                        client_ssh.exec_command(f'echo -e "\n{conta} ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers.d/xxxxxx')
+                    stdin, stdout, stderr = client_ssh.exec_command(f"sudo useradd -m -p $(openssl passwd -1 {senha}) -s /bin/bash {conta}")
 
-                else:
-                    senha = gerar_senha_aleatoria()
-                    if conta == "xxxxx":
-                        stdin, stdout, stderr = client_ssh.exec_command(f"echo -e '{senha}\n{senha}' | passwd {conta} && usermod -a -G xxxx {conta}")
+                    if stdout.channel.recv_exit_status() == 0:
+                        escritor_usuarios_csv.writerow({'ip': hostname, 'usuario': conta, 'senha': senha})
                     else:
-                        stdin, stdout, stderr = client_ssh.exec_command(f"echo -e '{senha}\n{senha}' | passwd {conta} && usermod -a -G xxxxx {conta}")
-                    
-                    escritor_usuarios_csv.writerow({'ip': hostname, 'usuario': conta, 'senha': senha})
+                        raise Exception(f"Falha ao criar usuário {conta}: {stderr.read().decode().strip()}")
+
+                else:  # Usuário já existe, redefinir senha
+                    senha = gerar_senha_aleatoria()
+                    stdin, stdout, stderr = client_ssh.exec_command(f"echo -e '{senha}\n{senha}' | sudo passwd {conta}")
+                    if stdout.channel.recv_exit_status() == 0:
+                        escritor_usuarios_csv.writerow({'ip': hostname, 'usuario': conta, 'senha': senha})
+                    else:
+                        raise Exception(f"Falha ao redefinir senha do usuário {conta}: {stderr.read().decode().strip()}")
 
     except Exception as e:
-        print(f"Erro ao conectar na máquina {hostname}: {e}")
-        linha_atualizada['status'] = 'Erro ao conectar na máquina'
+        print(f"Erro ao conectar ou executar comandos na máquina {hostname}: {e}")
+        linha_atualizada['status'] = 'Erro ao conectar ou executar comandos'
 
     finally:
         client_ssh.close()
         linhas_atualizadas.append(linha_atualizada)
 
-
+# Salvar status atualizado em credenciais.csv
 with open('credenciais.csv', mode='w', newline='') as arquivo:
     nomes_campos = ['hostname', 'username', 'password', 'status']
     escritor_csv = csv.DictWriter(arquivo, fieldnames=nomes_campos)
