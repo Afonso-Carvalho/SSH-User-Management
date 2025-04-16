@@ -126,7 +126,22 @@ def main():
     opcao = menu_interativo()
     credenciais = montar_lista_credenciais(opcao)
 
-    contas = ["conta1", "conta2"]
+    while True:
+        contas_input = input("Digite os nomes das contas que deseja criar, separadas por vírgula: ")
+        contas = []
+        for conta in contas_input.split(","):
+            conta = conta.strip()
+            if conta:
+                contas.append(conta)
+        
+        print(f"\nVocê deseja criar as seguintes contas: {', '.join(contas)}")
+        confirmacao = input("Confirmar? (Y/N): ").strip().lower()
+        
+        if confirmacao == 'y':
+            break
+        else:
+            print("Vamos tentar de novo...\n")
+
     linhas_atualizadas = []
 
     with open('usuarios_criados.csv', mode='w', newline='') as arquivo_usuarios:
