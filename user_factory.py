@@ -5,8 +5,9 @@ import string
 import requests
 import ipaddress
 import os
-# from requests.packages.urllib3.exceptions import InsecureRequestWarning
-# requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
  
 def banner():
     print("""
@@ -127,20 +128,25 @@ def main():
     credenciais = montar_lista_credenciais(opcao)
 
     while True:
-        contas_input = input("Digite os nomes das contas que deseja criar, separadas por vírgula: ")
-        contas = []
-        for conta in contas_input.split(","):
-            conta = conta.strip()
-            if conta:
-                contas.append(conta)
-        
+        contas_input = input("Digite os nomes das contas que deseja criar, separadas por vírgula. Para usar as contas padrão, pressione ENTER: ")
+
+        if not contas_input.strip():
+            contas = ["conta1", "conta4", "conta2"]
+        else:
+            contas = []
+            for conta in contas_input.split(","):
+                conta = conta.strip()
+                if conta:
+                    contas.append(conta)
+
         print(f"\nVocê deseja criar as seguintes contas: {', '.join(contas)}")
         confirmacao = input("Confirmar? (Y/N): ").strip().lower()
-        
+
         if confirmacao == 'y':
             break
         else:
             print("Vamos tentar de novo...\n")
+
 
     linhas_atualizadas = []
 
